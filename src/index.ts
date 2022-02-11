@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer'
-
+import cheerio from 'cheerio'
 interface Element {
   getAttribute(name: string): string
   value: string
@@ -20,12 +20,15 @@ const init = async () => {
   await page.waitForSelector('ytd-video-renderer,ytd-grid-video-renderer', {
     timeout: 10000
   })
-  const firstOccurrence = (await page.evaluate(() =>
-    document.querySelector('a#video-title')
-  )) as HTMLAnchorElement
 
-  firstOccurrence && (await page.goto(firstOccurrence.href))
-  !firstOccurrence && console.log('firstOccurrence is null')
+  const html = await page.content()
+  const $ = cheerio.load(html)
+
+  const firstOccurrence = $('a#video-title').toArray()[0]
+  const link = firstOccurrence.attribs.href
+  await page.goto(`https://www.youtube.com/${link}`)
+  await page.waitForSelector('.ytp-play-button')
+  await page.click('.ytp-play-button')
 }
 
 init()
